@@ -15,7 +15,7 @@ class FCN8(Net):
         self.ann_ph = ann_ph
         
         # Define VGG-16
-        self.network = tl.layers.InputLayer(img_ph)
+        self.network = tl.layers.InputLayer(self.img_ph)
         self.network = tl.layers.Conv2d(self.network, n_filter=32, act = tf.nn.relu, name ='vgg_conv1')
         self.network = tl.layers.Conv2d(self.network, n_filter=32, act = tf.nn.relu, name ='vgg_conv2')
         self.pool1 = tl.layers.MaxPool2d(self.network, name='vgg_pool1')
@@ -41,14 +41,19 @@ class FCN8(Net):
         self.network = tl.layers.Conv2d(self.network, n_filter=1024, act = tf.nn.relu, name ='vgg_conv15')
 
         # Define Deconv part
-        batch_pool4, height_pool4, width_pool4, channel_pool4 = self.pool4.outputs.shape
-        self.network = tl.layers.DeConv2d(self.network, n_out_channel = int(channel_pool4), filter_size=(3, 3),  out_size = (height_pool4, width_pool4), act = tf.nn.relu, padding = 'SAME', name='fcn_deconv1')
+        kernel_size = [3, 3, self.pool4.outputs.shape[3], self.network.outputs.shape[3]] 
+        # deconv_shape = [None, int(self.pool4.outputs.shape[1]), int(self.pool4.outputs.shape[2]), int(self.pool4.outputs.shape[3])]
+        deconv_shape =tf.shape(self.pool4.outputs)
+        self.network = tl.layers.DeConv2dLayer(self.network, shape = kernel_size,  output_shape = deconv_shape, act = tf.nn.relu, name='fcn_deconv1')
+        print(self.network.outputs.shape)                
         self.network = tl.layers.ElementwiseLayer([self.network, self.pool4], combine_fn = tf.add, name='fcn_add1')
-        batch_pool3, height_pool3, width_pool3, channel_pool3 = self.pool3.outputs.shape
-        self.network = tl.layers.DeConv2d(self.network, n_out_channel = int(channel_pool3), filter_size=(3, 3), out_size = (height_pool3, width_pool3), act = tf.nn.relu, padding = 'SAME', name='fcn_deconv2')
-        self.network = tl.layers.ElementwiseLayer([self.network, self.pool3], combine_fn = tf.add, name ='fcn_add2')
-        batch_ann, height_ann, width_ann, channel_ann = ann_ph.shape
-        self.network = tl.layers.DeConv2d(self.network, n_out_channel = int(channel_ann), filter_size=(3, 3), strides = (8, 8), out_size = (height_ann, width_ann), act = tf.nn.softmax, padding = 'SAME', name ='fcn_deconv3')
-        self.predict = self.network.outputs
-        self.work(ann_ph, self.predict)
 
+        kernel_size = [3, 3, self.pool3.outputs.shape[3], self.network.outputs.shape[3]]         
+        deconv_shape = [-1, int(self.pool3.outputs.shape[1]), int(self.pool3.outputs.shape[2]), int(self.pool3.outputs.shape[3])]                
+        self.network = tl.layers.DeConv2dLayer(self.network, shape = kernel_size,  output_shape = deconv_shape, act = tf.nn.relu, name='fcn_deconv2')
+        self.network = tl.layers.ElementwiseLayer([self.network, self.pool3], combine_fn = tf.add, name ='fcn_add2')
+
+        batch_ann, height_ann, width_ann, channel_ann = ann_ph.shape
+        self.network = tl.layers.DeConv2d(self.network, n_out_channel = int(channel_ann), filter_size=(3, 3), strides = (8, 8), out_size = (height_ann, width_ann), act = tf.nn.softmax, name ='fcn_deconv3')        
+        self.predict = self.network.outputs
+        self.work(self.ann_ph, self.predict)

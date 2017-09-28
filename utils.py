@@ -46,11 +46,11 @@ def to_categorical_4d_reverse(_input_tensor, pallete):
     # Decode the index to the original RGB color intensity
     batch, height, width, channel = np.shape(_input_tensor)
     _result_tensor = np.zeros([batch, height, width, 3])
-    _result_tensor[:, :, :, 2] = decode_map[:, :, :] % 2
+    _result_tensor[:, :, :, 2] = decode_map[:, :, :] % 1
     decode_map[:, :, :] = (decode_map[:, :, :] - _result_tensor[:, :, :, 2]) / 10
-    _result_tensor[:, :, :, 1] = decode_map[:, :, :] % 2
+    _result_tensor[:, :, :, 1] = decode_map[:, :, :] % 1
     decode_map[:, :, :] = (decode_map[:, :, :] - _result_tensor[:, :, :, 1]) / 10
-    _result_tensor[:, :, :, 0] = decode_map[:, :, :] % 2
+    _result_tensor[:, :, :, 0] = decode_map[:, :, :] % 1
     return _result_tensor
 
 def __buildPallete(_input_tensor, pallete):

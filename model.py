@@ -1,6 +1,14 @@
 import tensorlayer as tl
 import tensorflow as tf
 
+def deconv(_tensor, kernel_size = [3, 3, 256, 1024], output_shape = [32, 65, 49, 256]):
+    with tf.name_scope('deconv'):
+        w = tf.Variable(tf.random_normal(kernel_size))
+        output_size = tf.stack([tf.shape(_tensor)[0], output_shape[1], output_shape[2], output_shape[3]])
+        deconv = tf.nn.conv2d_transpose(_tensor, filter=w, output_shape=output_size, strides=[1, 2, 2, 1], padding='SAME', name=None)
+        deconv = tf.reshape(deconv, output_size)
+        return deconv
+
 class Net(object):
     def work(self, ann_ph, predict):
         self.predict = predict
@@ -16,43 +24,39 @@ class FCN8(Net):
         
         # Define VGG-16
         self.network = tl.layers.InputLayer(self.img_ph)
-        self.network = tl.layers.Conv2d(self.network, n_filter=32, act = tf.nn.relu, name ='vgg_conv1')
-        self.network = tl.layers.Conv2d(self.network, n_filter=32, act = tf.nn.relu, name ='vgg_conv2')
+        self.network = tl.layers.Conv2d(self.network, n_filter=4, act = tf.nn.relu, name ='vgg_conv1')
+        self.network = tl.layers.Conv2d(self.network, n_filter=4, act = tf.nn.relu, name ='vgg_conv2')
         self.pool1 = tl.layers.MaxPool2d(self.network, name='vgg_pool1')
-        self.network = tl.layers.Conv2d(self.pool1, n_filter=64, act = tf.nn.relu, name ='vgg_conv3')
-        self.network = tl.layers.Conv2d(self.network, n_filter=64, act = tf.nn.relu, name ='vgg_conv4')
+        self.network = tl.layers.Conv2d(self.pool1, n_filter=8, act = tf.nn.relu, name ='vgg_conv3')
+        self.network = tl.layers.Conv2d(self.network, n_filter=8, act = tf.nn.relu, name ='vgg_conv4')
         self.pool2 = tl.layers.MaxPool2d(self.network, name='vgg_pool2')
-        self.network = tl.layers.Conv2d(self.pool2, n_filter=128, act = tf.nn.relu, name ='vgg_conv5')
-        self.network = tl.layers.Conv2d(self.network, n_filter=128, act = tf.nn.relu, name ='vgg_conv6')
-        self.network = tl.layers.Conv2d(self.network, n_filter=128, act = tf.nn.relu, name ='vgg_conv7')
+        self.network = tl.layers.Conv2d(self.pool2, n_filter=16, act = tf.nn.relu, name ='vgg_conv5')
+        self.network = tl.layers.Conv2d(self.network, n_filter=16, act = tf.nn.relu, name ='vgg_conv6')
+        self.network = tl.layers.Conv2d(self.network, n_filter=16, act = tf.nn.relu, name ='vgg_conv7')
         self.pool3 = tl.layers.MaxPool2d(self.network, name='vgg_pool3')
-        self.network = tl.layers.Conv2d(self.pool3, n_filter=256, act = tf.nn.relu, name ='vgg_conv8')
-        self.network = tl.layers.Conv2d(self.network, n_filter=256, act = tf.nn.relu, name ='vgg_conv9')
-        self.network = tl.layers.Conv2d(self.network, n_filter=256, act = tf.nn.relu, name ='vgg_conv10')
+        self.network = tl.layers.Conv2d(self.pool3, n_filter=32, act = tf.nn.relu, name ='vgg_conv8')
+        self.network = tl.layers.Conv2d(self.network, n_filter=32, act = tf.nn.relu, name ='vgg_conv9')
+        self.network = tl.layers.Conv2d(self.network, n_filter=32, act = tf.nn.relu, name ='vgg_conv10')
         self.pool4 = tl.layers.MaxPool2d(self.network, name='vgg_pool4')
-        self.network = tl.layers.Conv2d(self.pool4, n_filter=512, act = tf.nn.relu, name ='vgg_conv11')
-        self.network = tl.layers.Conv2d(self.network, n_filter=512, act = tf.nn.relu, name ='vgg_conv12')
-        self.network = tl.layers.Conv2d(self.network, n_filter=512, act = tf.nn.relu, name ='vgg_conv13')
+        self.network = tl.layers.Conv2d(self.pool4, n_filter=64, act = tf.nn.relu, name ='vgg_conv11')
+        self.network = tl.layers.Conv2d(self.network, n_filter=64, act = tf.nn.relu, name ='vgg_conv12')
+        self.network = tl.layers.Conv2d(self.network, n_filter=64, act = tf.nn.relu, name ='vgg_conv13')
         self.pool5 = tl.layers.MaxPool2d(self.network, name='vgg_pool5')
 
         # Define FC part
         batch, height, width, channel = self.pool5.outputs.shape
-        self.network = tl.layers.Conv2d(self.pool5, n_filter=1024, act = tf.nn.relu, name ='vgg_conv14')
-        self.network = tl.layers.Conv2d(self.network, n_filter=1024, act = tf.nn.relu, name ='vgg_conv15')
+        self.network = tl.layers.Conv2d(self.pool5, n_filter=128, act = tf.nn.relu, name ='vgg_conv14')
+        self.network = tl.layers.Conv2d(self.network, n_filter=128, act = tf.nn.relu, name ='vgg_conv15')
 
         # Define Deconv part
-        kernel_size = [3, 3, self.pool4.outputs.shape[3], self.network.outputs.shape[3]] 
-        # deconv_shape = [None, int(self.pool4.outputs.shape[1]), int(self.pool4.outputs.shape[2]), int(self.pool4.outputs.shape[3])]
-        deconv_shape =tf.shape(self.pool4.outputs)
-        self.network = tl.layers.DeConv2dLayer(self.network, shape = kernel_size,  output_shape = deconv_shape, act = tf.nn.relu, name='fcn_deconv1')
-        print(self.network.outputs.shape)                
+        self.network = deconv(self.network.outputs, kernel_size = [3, 3, 32, 128], output_shape = [32, 65, 49, 32])
+        self.network = tl.layers.InputLayer(self.network, name ='input_layer1')
         self.network = tl.layers.ElementwiseLayer([self.network, self.pool4], combine_fn = tf.add, name='fcn_add1')
-
-        kernel_size = [3, 3, self.pool3.outputs.shape[3], self.network.outputs.shape[3]]         
-        deconv_shape = [-1, int(self.pool3.outputs.shape[1]), int(self.pool3.outputs.shape[2]), int(self.pool3.outputs.shape[3])]                
-        self.network = tl.layers.DeConv2dLayer(self.network, shape = kernel_size,  output_shape = deconv_shape, act = tf.nn.relu, name='fcn_deconv2')
+        
+        self.network = deconv(self.network.outputs, kernel_size = [3, 3, 16, 32], output_shape = [32, 130, 98, 16])
+        self.network = tl.layers.InputLayer(self.network, name ='input_layer2')        
         self.network = tl.layers.ElementwiseLayer([self.network, self.pool3], combine_fn = tf.add, name ='fcn_add2')
-
+        
         batch_ann, height_ann, width_ann, channel_ann = ann_ph.shape
         self.network = tl.layers.DeConv2d(self.network, n_out_channel = int(channel_ann), filter_size=(3, 3), strides = (8, 8), out_size = (height_ann, width_ann), act = tf.nn.softmax, name ='fcn_deconv3')        
         self.predict = self.network.outputs

@@ -14,8 +14,17 @@ class Net(object):
         self.predict = predict
         self.ann_ph = ann_ph
         print(self.ann_ph.shape, self.predict.shape)
-        self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.ann_ph, logits=self.predict))
-        self.optimize = tf.train.AdamOptimizer().minimize(self.loss)
+        # self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.ann_ph, logits=self.predict))
+
+        # Gradient explosion: https://github.com/MarvinTeichmann/KittiSeg/blob/master/optimizer/generic_optimizer.py
+        ann_tensor = tf.reshape(ann_ph, [-1, tf.shape(predict)[-1]])
+        predict_tensor = tf.reshape(predict, [-1, tf.shape(predict)[-1]])
+        self.cross_entropy = -tf.reduce_sum(tf.multiply(ann_tensor, tf.log(predict_tensor)), reduction_indices=[1])
+
+        print(self.cross_entropy)
+
+        self.loss = tf.reduce_mean(self.cross_entropy)
+        self.optimize = tf.train.AdamOptimizer().minimize(self.cross_entropy)
 
 class FCN8(Net):
     def __init__(self, img_ph, ann_ph):

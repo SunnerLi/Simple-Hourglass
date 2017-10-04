@@ -29,19 +29,8 @@ class Net(object):
 
         # Clip the gradient
         grads_and_vars = self.optimizer.compute_gradients(self.loss)
-        grads, vars = zip(*grads_and_vars)
-        # grads, _ = tf.clip_by_global_norm(grads, [-1, 1])
-
-        _grad_list = []
-        for i in range(len(grads)):
-            clip_one_grad = tf.clip_by_value(grads[i], -0.01, 0.01)
-            _grad_list.append(clip_one_grad)
-        grads = tuple(_grad_list)
-        
-        # print(type(grads))
-        # grads = tf.clip_by_value(grads, -1, 1)
-        grads_and_vars = zip(grads, vars)
-        self.train_op = self.optimizer.apply_gradients(grads_and_vars)
+        crop_grads_and_vars = [(tf.clip_by_value(grad, -0.0001, 0.0001), var) for grad, var in grads_and_vars]
+        self.train_op = self.optimizer.apply_gradients(crop_grads_and_vars)
 
 class FCN8(Net):
     def __init__(self, img_ph, ann_ph):
@@ -84,7 +73,7 @@ class FCN8(Net):
         self.network = tl.layers.ElementwiseLayer([self.network, self.pool3], combine_fn = tf.add, name ='fcn_add2')
         
         batch_ann, height_ann, width_ann, channel_ann = ann_ph.shape
-        self.network = tl.layers.DeConv2d(self.network, n_out_channel = int(channel_ann), filter_size=(3, 3), strides = (8, 8), out_size = (height_ann, width_ann), act = tf.nn.relu, name ='fcn_deconv3')        
+        self.network = tl.layers.DeConv2d(self.network, n_out_channel = int(channel_ann), filter_size=(7, 7), strides = (8, 8), out_size = (height_ann, width_ann), act = tf.nn.relu, name ='fcn_deconv3')        
         self.network = tl.layers.DeConv2d(self.network, n_out_channel = int(channel_ann), filter_size=(3, 3), strides = (1, 1), out_size = (height_ann, width_ann), act = tf.nn.softmax, name ='fcn_deconv4')        
         self.predict = self.network.outputs
         self.work(self.ann_ph, self.predict)

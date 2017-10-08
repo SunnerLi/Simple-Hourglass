@@ -1,7 +1,7 @@
 from utils import to_categorical_4d, to_categorical_4d_reverse
 from matplotlib import pyplot as plt
 from skimage import io
-from model import FCN8
+from model2 import FCN8 
 import tensorflow as tf
 import numpy as np
 import ear_pen
@@ -23,7 +23,7 @@ if __name__ == '__main__':
         for i in range(50):
             feed_dict = {
                 img_ph: train_img[0:2],
-                ann_ph: train_ann[0:2]
+                ann_ph: train_ann[0:2] 
             }
             _loss, _, _img = sess.run([net.loss, net.train_op, net.prediction], feed_dict=feed_dict)
             _img = np.asarray(to_categorical_4d_reverse(_img, _map)[0, :, :, :] * 255, dtype=int)            

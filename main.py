@@ -1,7 +1,7 @@
 from utils import to_categorical_4d, to_categorical_4d_reverse
 from matplotlib import pyplot as plt
 from skimage import io
-from model2 import UNet 
+from model3 import UNet 
 import tensorflow as tf
 import numpy as np
 import ear_pen
@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for i in range(1000):
+        for i in range(5000):
             feed_dict = {
                 img_ph: train_img[0:2],
                 ann_ph: train_ann[0:2] 

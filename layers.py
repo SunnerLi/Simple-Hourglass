@@ -28,11 +28,13 @@ def conv2d_transpose(x, W, b, output_shape=None, stride=2):
     if type(b) == list:
         b = get_weight(b)
     if output_shape == None:
-        output_shape = x.get_shape().as_list()
-        output_shape[1] *= 2
-        output_shape[2] *= 2
-        output_shape[3] = W.get_shape().as_list()[2]
-    deconv = tf.nn.conv2d_transpose(x, W, output_shape, strides=[1, stride, stride, 1], padding="SAME")
+        # output_shape = x.get_shape().as_list()
+        # output_shape[1] *= 2
+        # output_shape[2] *= 2
+        # output_shape[3] = W.get_shape().as_list()[2]
+        x_shape = tf.shape(x)
+        output_shape = tf.stack([x_shape[0], x_shape[1] * 2, x_shape[2] * 2, x_shape[3] // 2])
+    deconv = tf.nn.conv2d_transpose(x, W, output_shape=output_shape, strides=[1, stride, stride, 1], padding="SAME")
     return tf.nn.bias_add(deconv, b)
 
 def leaky_rely(x, alpha=0.01):
@@ -70,11 +72,9 @@ def unpooling(x, output_shape=None):
     output_shape = tf.stack([origin_shape[1] * 2, origin_shape[2] * 2])
     return tf.image.resize_bilinear(x, output_shape)
 
-def crop_and_concat(tensor, prev):
-    origin_height = tf.shape(tensor)[1]
-    origin_width = tf.shape(tensor)[2]
-    target_height = prev.get_shape().as_list()[1]
-    target_width = prev.get_shape().as_list()[2]
-    begin = [0, (origin_height - target_height) // 2, (origin_width - target_width) // 2, 0]
-    size = [-1, target_height, target_width, -1]
-    return tf.concat([tf.slice(tensor, begin, size), prev], axis=3)
+def crop_and_concat(x1, x2):
+    x1_shape = tf.shape(x1)
+    x2_shape = tf.shape(x2)
+    begin = [0, (x1_shape[1] - x2_shape[1]) // 2, (x1_shape[2] - x2_shape[2]) // 2, 0]
+    size = [-1, x2_shape[1], x2_shape[2], -1]
+    return tf.concat([tf.slice(x1, begin, size), x2], axis=3)

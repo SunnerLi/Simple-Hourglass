@@ -71,6 +71,11 @@ def unpooling(x, output_shape=None):
     return tf.image.resize_bilinear(x, output_shape)
 
 def cropping(x, output_shape):
+    print('x shape: ', x.get_shape().as_list())
+    origin_height = tf.shape(x)[1]
+    origin_width = tf.shape(x)[2]
     target_height = output_shape[1]
     target_width = output_shape[2]
-    return tf.image.resize_image_with_crop_or_pad(x, target_height, target_width)
+    begin = [0, (origin_height - target_height) // 2, (origin_width - target_width) // 2, 0]
+    size = [-1, target_height, target_width, -1]
+    return tf.slice(x, begin, size)

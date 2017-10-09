@@ -12,7 +12,8 @@ class UNet(object):
 
         # Crop gradient
         grads_and_vars = optimizer.compute_gradients(self.loss)
-        crop_grads_and_vars = [(tf.clip_by_value(grad, -0.0001, 0.0001), var) for grad, var in grads_and_vars]
+        # crop_grads_and_vars = [(tf.clip_by_value(grad, -0.001, 0.001), var) for grad, var in grads_and_vars]
+        crop_grads_and_vars = grads_and_vars
         self.train_op = optimizer.apply_gradients(crop_grads_and_vars)
 
     def vgg_part(self, image_ph, base_filter_num=2):
@@ -59,66 +60,76 @@ class UNet(object):
         self.vgg_part(image_ph)
         with tf.variable_scope('deconv'):
             # Upsampling1
-            # unpool1 = layers.unpooling(self.network['pool5'])
             prev_channel = self.network['pool5'].get_shape().as_list()[-1]
             curr_channel = self.network['pool4'].get_shape().as_list()[-1]
-            deconv1 = layers.conv2d_transpose(self.network['pool5'], W=[5, 5, curr_channel, prev_channel], b=[curr_channel], stride=1, output_shape=tf.shape(self.network['pool4']))
-            crop1 = layers.cropping(unpool1, self.network['pool4'].get_shape().as_list())
-            concat1 = tf.concat([deconv1, self.network['pool4']], axis=-1)
-
-            
+            deconv1 = layers.conv2d_transpose(self.network['pool5'], W=[2, 2, curr_channel, prev_channel], b=[curr_channel], output_shape=tf.shape(self.network['pool4']))
+            relu6_1 = tf.nn.relu(deconv1)
+            crop1 = layers.cropping(relu6_1, self.network['pool4'].get_shape().as_list())
+            concat1 = tf.concat([crop1, self.network['pool4']], axis=-1)
             prev_channel = concat1.get_shape().as_list()[-1]
-            curr_channel = self.network['pool4'].get_shape().as_list()[-1]
             conv6_1 = layers.conv2d(concat1, W=[3, 3, prev_channel, curr_channel], b=[curr_channel])
-            relu6_1 = tf.nn.relu(conv6_1)
-            conv6_2 = layers.conv2d(relu6_1, W=[3, 3, curr_channel, curr_channel], b=[curr_channel])
-            relu6_2 = tf.nn.relu(conv6_2)
+            relu6_2 = tf.nn.relu(conv6_1)
+            conv6_2 = layers.conv2d(relu6_2, W=[3, 3, curr_channel, curr_channel], b=[curr_channel])
+            relu6_3 = tf.nn.relu(conv6_2)
 
             # Upsampling2
-            unpool2 = layers.unpooling(relu6_2)
-            crop2 = layers.cropping(unpool2, self.network['pool3'].get_shape().as_list())
+            prev_channel = relu6_3.get_shape().as_list()[-1]
+            curr_channel = self.network['pool3'].get_shape().as_list()[-1]
+            deconv2 = layers.conv2d_transpose(relu6_3, W=[2, 2, curr_channel, prev_channel], b=[curr_channel], output_shape=tf.shape(self.network['pool3']))
+            relu7_1 = tf.nn.relu(deconv2)
+            crop2 = layers.cropping(relu7_1, self.network['pool3'].get_shape().as_list())
             concat2 = tf.concat([crop2, self.network['pool3']], axis=-1)
             prev_channel = concat2.get_shape().as_list()[-1]
-            curr_channel = self.network['pool3'].get_shape().as_list()[-1]
             conv7_1 = layers.conv2d(concat2, W=[3, 3, prev_channel, curr_channel], b=[curr_channel])
-            relu7_1 = tf.nn.relu(conv7_1)
-            conv7_2 = layers.conv2d(relu7_1, W=[3, 3, curr_channel, curr_channel], b=[curr_channel])
-            relu7_2 = tf.nn.relu(conv7_2)
+            relu7_2 = tf.nn.relu(conv7_1)
+            conv7_2 = layers.conv2d(relu7_2, W=[3, 3, curr_channel, curr_channel], b=[curr_channel])
+            relu7_3 = tf.nn.relu(conv7_2)
 
             # Upsampling3
-            unpool3 = layers.unpooling(relu7_2)
-            crop3 = layers.cropping(unpool3, self.network['pool2'].get_shape().as_list())
+            prev_channel = relu7_3.get_shape().as_list()[-1]
+            curr_channel = self.network['pool2'].get_shape().as_list()[-1]
+            deconv3 = layers.conv2d_transpose(relu7_3, W=[2, 2, curr_channel, prev_channel], b=[curr_channel], output_shape=tf.shape(self.network['pool2']))
+            relu8_1 = tf.nn.relu(deconv3)
+            crop3 = layers.cropping(relu8_1, self.network['pool2'].get_shape().as_list())
             concat3 = tf.concat([crop3, self.network['pool2']], axis=-1)
             prev_channel = concat3.get_shape().as_list()[-1]
-            curr_channel = self.network['pool2'].get_shape().as_list()[-1]
             conv8_1 = layers.conv2d(concat3, W=[3, 3, prev_channel, curr_channel], b=[curr_channel])
-            relu8_1 = tf.nn.relu(conv8_1)
-            conv8_2 = layers.conv2d(relu8_1, W=[3, 3, curr_channel, curr_channel], b=[curr_channel])
-            relu8_2 = tf.nn.relu(conv8_2)
+            relu8_2 = tf.nn.relu(conv8_1)
+            conv8_2 = layers.conv2d(relu8_2, W=[3, 3, curr_channel, curr_channel], b=[curr_channel])
+            relu8_3 = tf.nn.relu(conv8_2)
             
             # Upsampling4
-            unpool4 = layers.unpooling(relu8_2)
-            crop4 = layers.cropping(unpool4, self.network['pool1'].get_shape().as_list())
+            prev_channel = relu8_3.get_shape().as_list()[-1]
+            curr_channel = self.network['pool1'].get_shape().as_list()[-1]
+            deconv4 = layers.conv2d_transpose(relu8_3, W=[2, 2, curr_channel, prev_channel], b=[curr_channel], output_shape=tf.shape(self.network['pool1']))
+            relu9_1 = tf.nn.relu(deconv4)
+            crop4 = layers.cropping(relu9_1, self.network['pool1'].get_shape().as_list())
             concat4 = tf.concat([crop4, self.network['pool1']], axis=-1)
             prev_channel = concat4.get_shape().as_list()[-1]
-            curr_channel = self.network['pool1'].get_shape().as_list()[-1]
             conv9_1 = layers.conv2d(concat4, W=[3, 3, prev_channel, curr_channel], b=[curr_channel])
-            relu9_1 = tf.nn.relu(conv9_1)
-            conv9_2 = layers.conv2d(relu9_1, W=[3, 3, curr_channel, curr_channel], b=[curr_channel])
-            relu9_2 = tf.nn.relu(conv9_2)
+            relu9_2 = tf.nn.relu(conv9_1)
+            conv9_2 = layers.conv2d(relu9_2, W=[3, 3, curr_channel, curr_channel], b=[curr_channel])
+            relu9_3 = tf.nn.relu(conv9_2)
 
             # Upsampling5
-            unpool5 = layers.unpooling(relu9_2)
-            crop5 = layers.cropping(unpool5, ann_ph.get_shape().as_list())
-            prev_channel = crop5.get_shape().as_list()[-1]
+            prev_channel = relu9_3.get_shape().as_list()[-1]
             curr_channel = 3
+            output_shape = tf.stack([tf.shape(ann_ph)[0], tf.shape(ann_ph)[1], tf.shape(ann_ph)[2], 3])
+            deconv5 = layers.conv2d_transpose(relu9_3, W=[2, 2, curr_channel, prev_channel], b=[curr_channel], output_shape=output_shape)
+            relu10_1 = tf.nn.relu(deconv5)            
+            crop5 = layers.cropping(relu10_1, image_ph.get_shape().as_list())
+            prev_channel = crop5.get_shape().as_list()[-1]
             conv10_1 = layers.conv2d(crop5, W=[3, 3, prev_channel, curr_channel], b=[curr_channel])
-            relu10_1 = tf.nn.relu(conv10_1)
-            conv10_2 = layers.conv2d(relu10_1, W=[3, 3, curr_channel, curr_channel], b=[curr_channel])
-            relu10_2 = tf.nn.sigmoid(conv10_2)
+            relu10_2 = tf.nn.relu(conv10_1)
+            conv10_2 = layers.conv2d(relu10_2, W=[3, 3, curr_channel, curr_channel], b=[curr_channel])
+            relu10_3 = tf.nn.relu(conv10_2)
+
+            # Final
+            conv11 = layers.conv2d(relu10_3, W=[1, 1, curr_channel, curr_channel], b=[curr_channel])
+            relu11 = tf.nn.relu(conv11)
             print('relu10_2\toutput: ', relu10_2.get_shape().as_list())
-            self.predict = tf.argmax(relu10_2, axis=-1)
-        return tf.expand_dims(self.predict, axis=-1), relu10_2
+            self.predict = tf.argmax(relu11, axis=-1)
+        return tf.expand_dims(self.predict, axis=-1), relu11
 
 if __name__ == '__main__':
     img_ph = tf.placeholder(tf.float32, shape=[None, 1040, 780, 3])

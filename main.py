@@ -17,13 +17,13 @@ if __name__ == '__main__':
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for i in range(100):
+        for i in range(500):
             feed_dict = {
                 img_ph: train_img[0:2],
                 ann_ph: train_ann[0:2] 
             }
             _loss, _, _img = sess.run([net.loss, net.train_op, net.prediction], feed_dict=feed_dict)
             _img = np.asarray(to_categorical_4d_reverse(_img, _map)[0, :, :, :] * 255, dtype=int)            
-            if i % 10 == 0:
+            if i % 50 == 0:
                 io.imsave(str(i)+'.png', _img)
                 print('iter: ', i, '\tloss: ', _loss)

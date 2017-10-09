@@ -70,12 +70,11 @@ def unpooling(x, output_shape=None):
     output_shape = tf.stack([origin_shape[1] * 2, origin_shape[2] * 2])
     return tf.image.resize_bilinear(x, output_shape)
 
-def cropping(x, output_shape):
-    print('x shape: ', x.get_shape().as_list())
-    origin_height = tf.shape(x)[1]
-    origin_width = tf.shape(x)[2]
-    target_height = output_shape[1]
-    target_width = output_shape[2]
+def crop_and_concat(tensor, prev):
+    origin_height = tf.shape(tensor)[1]
+    origin_width = tf.shape(tensor)[2]
+    target_height = prev.get_shape().as_list()[1]
+    target_width = prev.get_shape().as_list()[2]
     begin = [0, (origin_height - target_height) // 2, (origin_width - target_width) // 2, 0]
     size = [-1, target_height, target_width, -1]
-    return tf.slice(x, begin, size)
+    return tf.concat([tf.slice(tensor, begin, size), prev], axis=3)

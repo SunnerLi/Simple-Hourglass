@@ -46,7 +46,7 @@ class UNet_Def(object):
         'conv2_1', 'relu2_1', 'conv2_2', 'relu2_2', 'pool2',
         'conv3_1', 'relu3_1', 'conv3_2', 'relu3_2', 'pool3',
         'conv4_1', 'relu4_1', 'conv4_2', 'relu4_2', 'pool4',
-        'conv5_1', 'relu5_1', 'conv5_2', 'relu5_2', 'pool5'
+        'conv5_1', 'relu5_1', 'conv5_2', 'relu5_2'
     ]
     num_filter_times = {
         'conv1_1': 1, 'conv1_2': 1,

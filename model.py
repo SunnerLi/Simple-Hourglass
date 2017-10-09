@@ -52,7 +52,7 @@ class FCN8(object):
             Form the whole network of FCN-8
             The previous part is VGG-16 whose last three layer are conv layer
             The back part is deconv process
-
+            
             Arg:    image_ph        - The placeholder of images
             Ret:    The prediction result and the logits
         """

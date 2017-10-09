@@ -52,7 +52,7 @@ class FCN8(object):
             Form the whole network of FCN-8
             The previous part is VGG-16 whose last three layer are conv layer
             The back part is deconv process
-            
+
             Arg:    image_ph        - The placeholder of images
             Ret:    The prediction result and the logits
         """
@@ -76,6 +76,7 @@ class FCN8(object):
             curr_channel = add2.get_shape().as_list()[-1]
             deconv3 = layers.conv2d_transpose(add2, W=[16, 16, prev_channel, curr_channel], b=[prev_channel], output_shape=output_shape, stride=8)
             self.predict = tf.argmax(deconv3, axis=-1)
+        print('trainable: ', tf.trainable_variables())
         return tf.expand_dims(self.predict, axis=-1), deconv3
 
 if __name__ == '__main__':

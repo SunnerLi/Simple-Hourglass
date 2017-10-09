@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for i in range(50):
+        for i in range(100):
             feed_dict = {
                 img_ph: train_img[0:2],
                 ann_ph: train_ann[0:2] 

@@ -72,7 +72,7 @@ class FCN8(object):
             output_shape = tf.stack([tf.shape(add2)[0], deconv3_shape[1], deconv3_shape[2], 3])
             prev_channel = deconv3_shape[-1]
             curr_channel = add2.get_shape().as_list()[-1]
-            deconv3 = layers.conv2d_transpose(add2, W=[16, 16, prev_channel, curr_channel], b=[prev_channel], output_shape=output_shape)
+            deconv3 = layers.conv2d_transpose(add2, W=[16, 16, prev_channel, curr_channel], b=[prev_channel], output_shape=output_shape, stride=8)
             self.predict = tf.argmax(deconv3, axis=-1)
         return tf.expand_dims(self.predict, axis=-1), deconv3
 

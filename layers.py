@@ -64,3 +64,13 @@ def batch_norm(x, phase_train=True, scope='bn'):
                             lambda: (ema.average(batch_mean), ema.average(batch_var)))
         normed = tf.nn.batch_normalization(x, mean, var, beta, gamma, 1e-3)
     return normed
+
+def unpooling(x, output_shape=None):
+    origin_shape = x.get_shape().as_list()
+    output_shape = tf.stack([origin_shape[1] * 2, origin_shape[2] * 2])
+    return tf.image.resize_bilinear(x, output_shape)
+
+def cropping(x, output_shape):
+    target_height = output_shape[1]
+    target_width = output_shape[2]
+    return tf.image.resize_image_with_crop_or_pad(x, target_height, target_width)

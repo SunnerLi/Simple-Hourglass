@@ -1,70 +1,84 @@
-import tensorlayer as tl
+from model_def import FCN8_Def
 import tensorflow as tf
+import layers
 
-def deconv(_tensor, kernel_size = [3, 3, 256, 1024], output_shape = [32, 65, 49, 256], strides=[1, 2, 2, 1], padding='SAME'):
-    with tf.name_scope('deconv'):
-        w = tf.Variable(tf.random_normal(kernel_size))
-        output_size = tf.stack([tf.shape(_tensor)[0], output_shape[1], output_shape[2], output_shape[3]])
-        deconv = tf.nn.conv2d_transpose(_tensor, filter=w, output_shape=output_size, strides=strides, padding=padding, name=None)
-        deconv = tf.reshape(deconv, output_size)
-        return deconv
-
-class Net(object):
-    def work(self, ann_ph, predict):
-        self.predict = predict
-        self.ann_ph = ann_ph
-        ann_tensor = tf.reshape(ann_ph, [-1])
-        predict_reshape = tf.reshape(self.predict, [-1, 3])
-        self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=predict_reshape, labels=ann_tensor))
-        self.optimizer = tf.train.AdamOptimizer()
-
-        # Clip the gradient
-        grads_and_vars = self.optimizer.compute_gradients(self.loss)
-        crop_grads_and_vars = [(tf.clip_by_value(grad, -0.000001, 0.000001), var) for grad, var in grads_and_vars]
-        self.train_op = self.optimizer.apply_gradients(crop_grads_and_vars)
-
-class FCN8(Net):
+class FCN8(object):
     def __init__(self, img_ph, ann_ph):
-        self.img_ph = img_ph
-        self.ann_ph = ann_ph
-        
-        # Define VGG-16
-        self.network = tl.layers.InputLayer(self.img_ph)
-        self.network = tl.layers.Conv2d(self.network, n_filter=4, act = tf.nn.relu, name ='vgg_conv1')
-        self.network = tl.layers.Conv2d(self.network, n_filter=4, act = tf.nn.relu, name ='vgg_conv2')
-        self.pool1 = tl.layers.MaxPool2d(self.network, name='vgg_pool1')
-        self.network = tl.layers.Conv2d(self.pool1, n_filter=8, act = tf.nn.relu, name ='vgg_conv3')
-        self.network = tl.layers.Conv2d(self.network, n_filter=8, act = tf.nn.relu, name ='vgg_conv4')
-        self.pool2 = tl.layers.MaxPool2d(self.network, name='vgg_pool2')
-        self.network = tl.layers.Conv2d(self.pool2, n_filter=16, act = tf.nn.relu, name ='vgg_conv5')
-        self.network = tl.layers.Conv2d(self.network, n_filter=16, act = tf.nn.relu, name ='vgg_conv6')
-        self.network = tl.layers.Conv2d(self.network, n_filter=16, act = tf.nn.relu, name ='vgg_conv7')
-        self.pool3 = tl.layers.MaxPool2d(self.network, name='vgg_pool3')
-        self.network = tl.layers.Conv2d(self.pool3, n_filter=32, act = tf.nn.relu, name ='vgg_conv8')
-        self.network = tl.layers.Conv2d(self.network, n_filter=32, act = tf.nn.relu, name ='vgg_conv9')
-        self.network = tl.layers.Conv2d(self.network, n_filter=32, act = tf.nn.relu, name ='vgg_conv10')
-        self.pool4 = tl.layers.MaxPool2d(self.network, name='vgg_pool4')
-        self.network = tl.layers.Conv2d(self.pool4, n_filter=64, act = tf.nn.relu, name ='vgg_conv11')
-        self.network = tl.layers.Conv2d(self.network, n_filter=64, act = tf.nn.relu, name ='vgg_conv12')
-        self.network = tl.layers.Conv2d(self.network, n_filter=64, act = tf.nn.relu, name ='vgg_conv13')
-        self.pool5 = tl.layers.MaxPool2d(self.network, name='vgg_pool5')
+        # Form the network
+        self.network = {}
+        self.prediction, logits = self.formNet(img_ph)
+        self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.squeeze(ann_ph, squeeze_dims=[3]), logits=logits))
+        optimizer = tf.train.AdamOptimizer()
 
-        # Define FC part
-        batch, height, width, channel = self.pool5.outputs.shape
-        self.network = tl.layers.Conv2d(self.pool5, n_filter=128, act = tf.nn.relu, name ='vgg_conv14')
-        self.network = tl.layers.Conv2d(self.network, n_filter=128, act = tf.nn.relu, name ='vgg_conv15')
+        # Crop gradient
+        grads_and_vars = optimizer.compute_gradients(self.loss)
+        crop_grads_and_vars = [(tf.clip_by_value(grad, -0.001, 0.001), var) for grad, var in grads_and_vars]
+        self.train_op = optimizer.apply_gradients(crop_grads_and_vars)
 
-        # Define Deconv part
-        self.network = deconv(self.network.outputs, kernel_size = [3, 3, 32, 128], output_shape = [32, 7, 5, 32])
-        self.network = tl.layers.InputLayer(self.network, name ='input_layer1')
-        self.network = tl.layers.ElementwiseLayer([self.network, self.pool4], combine_fn = tf.add, name='fcn_add1')
-        
-        self.network = deconv(self.network.outputs, kernel_size = [3, 3, 16, 32], output_shape = [32, 13, 10, 16])
-        self.network = tl.layers.InputLayer(self.network, name ='input_layer2')        
-        self.network = tl.layers.ElementwiseLayer([self.network, self.pool3], combine_fn = tf.add, name ='fcn_add2')
-        
-        batch_ann, height_ann, width_ann, channel_ann = ann_ph.shape
-        self.network = tl.layers.DeConv2d(self.network, n_out_channel = int(3), filter_size=(7, 7), strides = (8, 8), out_size = (height_ann, width_ann), act = tf.nn.relu, name ='fcn_deconv3')        
-        self.network = tl.layers.DeConv2d(self.network, n_out_channel = int(3), filter_size=(3, 3), strides = (1, 1), out_size = (height_ann, width_ann), act = tf.nn.softmax, name ='fcn_deconv4')        
-        self.prediction = tf.expand_dims(tf.argmax(self.network.outputs, axis=-1), axis=-1)
-        self.work(self.ann_ph, self.network.outputs)
+    def vgg_part(self, image_ph, base_filter_num=2):
+        """
+            Build the network toward VGG previous part
+            If your computer didn't have enough RAM or GPU,
+            you should set the size as smaller one
+            (The base_filter_num in usual VGG-16 is 32)
+
+            Arg:    image_ph        - The placeholder of images
+                    base_filter_num - The base number of filter which can control the computation
+        """
+        # Import the definition of each layers
+        current_layer = image_ph
+        _def = FCN8_Def(base_filter_num)
+
+        # Build graph topology
+        with tf.variable_scope('vgg'):
+            for i, layer_name in enumerate(_def.layers):
+                if layer_name[:4] == 'conv':
+                    prev_channel = current_layer.get_shape().as_list()[-1]
+                    curr_channel = _def.num_filter_times[layer_name]
+                    filter_size = _def.filter_sizes[layer_name]
+                    current_layer = layers.conv2d(current_layer, W=[filter_size, filter_size, prev_channel, curr_channel], b=[curr_channel])
+                elif layer_name[:4] == 'relu':
+                    current_layer = tf.nn.relu(current_layer, name=layer_name)
+                elif layer_name[:4] == 'pool':
+                    current_layer = layers.max_pool(current_layer)
+                else:
+                    print('invalid layer...')
+                    exit()
+                self.network[layer_name] = current_layer
+                print(layer_name, '\toutput: ', current_layer.get_shape().as_list())
+    
+    def formNet(self, image_ph):
+        """
+            Form the whole network of FCN-8
+            The previous part is VGG-16 whose last three layer are conv layer
+            The back part is deconv process
+
+            Arg:    image_ph        - The placeholder of images
+            Ret:    The prediction result and the logits
+        """
+        self.vgg_part(image_ph)
+        with tf.variable_scope('deconv'):
+            deconv1_shape = self.network['pool4'].get_shape().as_list()
+            prev_channel = deconv1_shape[-1]
+            curr_channel = self.network['conv6_3'].get_shape().as_list()[-1]
+            deconv1 = layers.conv2d_transpose(self.network['conv6_3'], W=[5, 5, prev_channel, curr_channel], b=[prev_channel], output_shape=tf.shape(self.network['pool4']))
+            add1 = tf.add(deconv1, self.network['pool4'])
+
+            deconv2_shape = self.network['pool3'].get_shape().as_list()
+            prev_channel = deconv2_shape[-1]
+            curr_channel = add1.get_shape().as_list()[-1]
+            deconv2 = layers.conv2d_transpose(add1, W=[5, 5, prev_channel, curr_channel], b=[prev_channel], output_shape=tf.shape(self.network['pool3']))
+            add2 = tf.add(deconv2, self.network['pool3'])
+
+            deconv3_shape = image_ph.get_shape().as_list()
+            output_shape = tf.stack([tf.shape(add2)[0], deconv3_shape[1], deconv3_shape[2], 3])
+            prev_channel = deconv3_shape[-1]
+            curr_channel = add2.get_shape().as_list()[-1]
+            deconv3 = layers.conv2d_transpose(add2, W=[16, 16, prev_channel, curr_channel], b=[prev_channel], output_shape=output_shape, stride=8)
+            self.predict = tf.argmax(deconv3, axis=-1)
+        return tf.expand_dims(self.predict, axis=-1), deconv3
+
+if __name__ == '__main__':
+    img_ph = tf.placeholder(tf.float32, shape=[None, 104, 78, 3])
+    ann_ph = tf.placeholder(tf.int32, shape=[None, 104, 78, 1])
+    net = FCN8(img_ph, ann_ph)

@@ -19,7 +19,7 @@ if __name__ == '__main__':
     test_ann = np.asarray(test_ann) / 255
     test_ann, _map = to_categorical_4d(test_ann)
 
-    # Train
+    # Test
     saver = tf.train.Saver()
     loss_list = []
     with tf.Session() as sess:

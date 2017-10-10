@@ -1,7 +1,7 @@
 import h5py
 import os
 
-def load_data(path='./ear_pen.h5'):
+def load_data(path='../data/ear_pen.h5'):
     """
         Load the Ear-pen dataset from the .h5 file
 

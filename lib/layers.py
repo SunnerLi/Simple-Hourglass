@@ -32,13 +32,9 @@ def conv2d_transpose(x, W, b, output_shape=None, stride=2):
     if type(b) == list:
         b = get_weight(b)
     if output_shape == None:
-        # output_shape = x.get_shape().as_list()
-        # output_shape[1] *= 2
-        # output_shape[2] *= 2
-        # output_shape[3] = W.get_shape().as_list()[2]
         x_shape = tf.shape(x)
-        # output_shape = tf.stack([x_shape[0], x_shape[1] * 2, x_shape[2] * 2, x_shape[3] // 2])            # UNet
-        output_shape = tf.stack([x_shape[0], x_shape[1] * 2, x_shape[2] * 2, x_shape[3]])                   # RedNet
+        output_shape = tf.stack([x_shape[0], x_shape[1] * 2, x_shape[2] * 2, x_shape[3] // 2])            # UNet
+        # output_shape = tf.stack([x_shape[0], x_shape[1] * 2, x_shape[2] * 2, x_shape[3]])                   # RedNet
     deconv = tf.nn.conv2d_transpose(x, W, output_shape=output_shape, strides=[1, stride, stride, 1], padding="SAME")
     return tf.nn.bias_add(deconv, b)
 

@@ -14,7 +14,7 @@ class RedNet(object):
         crop_grads_and_vars = [(tf.clip_by_value(grad, -0.001, 0.001), var) for grad, var in grads_and_vars]
         self.train_op = optimizer.apply_gradients(crop_grads_and_vars)
 
-    def formNet(self, img_ph, ann_ph, base_filter_num=32, layer_num=8):
+    def formNet(self, img_ph, ann_ph, base_filter_num=2, layer_num=8):
         conv_layer_list = []
         deconv_layer_list = []
         curr_layer = img_ph
@@ -23,6 +23,8 @@ class RedNet(object):
             conv1 = layers.simplified_conv2d_and_relu(curr_layer)
             curr_layer = layers.simplified_conv2d_and_relu(conv1)
             conv_layer_list.append(curr_layer)
+            print('conv+relu ', 2*i, '\tsize: ', conv1.get_shape().as_list())
+            print('conv+relu ', 2*i+1, '\tsize: ', curr_layer.get_shape().as_list())
         for i in range(layer_num-1, -1, -1):
             deconv1 = layers.simplified_conv2d_transpose_and_relu(curr_layer)
             if i == 0:
@@ -32,6 +34,9 @@ class RedNet(object):
             else:
                 deconv2 = layers.simplified_conv2d_transpose_and_relu(deconv1)
                 curr_layer = tf.add(deconv2, conv_layer_list[i])
+            print('deconv+relu ', 2*i+1, '\tsize: ', deconv1.get_shape().as_list())
+            print('deconv+relu ', 2*i, '\tsize: ', deconv2.get_shape().as_list())
+            print('add', layer_num-i, '\tsize: ', curr_layer.get_shape().as_list())
             deconv_layer_list.append(curr_layer)
         final_layer = layers.conv2d(curr_layer, W=[5, 5, img_channel, img_channel], b=[img_channel])
         return tf.expand_dims(tf.argmax(final_layer, axis=-1), axis=-1), final_layer

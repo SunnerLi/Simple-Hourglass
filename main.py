@@ -1,14 +1,14 @@
 from utils import to_categorical_4d, to_categorical_4d_reverse
 from matplotlib import pyplot as plt
 from skimage import io
-from model4 import RedNet 
+from model5 import RedNet 
 import tensorflow as tf
 import numpy as np
 import imageio
 import ear_pen
 
-epoch = 100
-save_period = 10
+epoch = 100000
+save_period = 1000
 
 def statistic(x, y):
     plt.plot(x, y, linestyle='-')

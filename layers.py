@@ -16,15 +16,19 @@ def get_bias(shape, name=None):
 
 def conv2d(x, W, b, strides=[1, 1, 1, 1]):
     if type(W) == list:
-        W = get_weight(W)
+        W = get_weight(W, stddev=0.001)
     if type(b) == list:
         b = get_weight(b)    
     conv = tf.nn.conv2d(x, W, strides=strides, padding='SAME')
     return tf.nn.bias_add(conv, b)
 
+def simplified_conv2d_and_relu(x, kernel_size=3, num_kernel=32, stride=1):
+    conv = conv2d(x, W=[kernel_size, kernel_size, x.get_shape().as_list()[-1], num_kernel], b=[num_kernel], strides=[1, stride, stride, 1])
+    return tf.nn.relu(conv)
+
 def conv2d_transpose(x, W, b, output_shape=None, stride=2):
     if type(W) == list:
-        W = get_weight(W)
+        W = get_weight(W, stddev=0.001)
     if type(b) == list:
         b = get_weight(b)
     if output_shape == None:
@@ -37,6 +41,14 @@ def conv2d_transpose(x, W, b, output_shape=None, stride=2):
         output_shape = tf.stack([x_shape[0], x_shape[1] * 2, x_shape[2] * 2, x_shape[3]])                   # RedNet
     deconv = tf.nn.conv2d_transpose(x, W, output_shape=output_shape, strides=[1, stride, stride, 1], padding="SAME")
     return tf.nn.bias_add(deconv, b)
+
+def simplified_conv2d_transpose_and_relu(x, kernel_size=3, num_kernel=32, stride=1):
+    output_shape = tf.stack([tf.shape(x)[0], tf.shape(x)[1], tf.shape(x)[2], num_kernel])
+    deconv = conv2d_transpose(x, 
+        W=[kernel_size, kernel_size, num_kernel, x.get_shape().as_list()[-1]], 
+        b=[num_kernel], 
+        output_shape=output_shape, stride=stride)
+    return tf.nn.relu(deconv)
 
 def leaky_rely(x, alpha=0.01):
     return tf.maximum(alpha * x, x)

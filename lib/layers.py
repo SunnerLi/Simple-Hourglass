@@ -16,7 +16,7 @@ def get_bias(shape, name=None):
 
 def conv2d(x, W, b, strides=[1, 1, 1, 1]):
     if type(W) == list:
-        W = get_weight(W, stddev=0.001)
+        W = get_weight(W)
     if type(b) == list:
         b = get_weight(b)    
     conv = tf.nn.conv2d(x, W, strides=strides, padding='SAME')
@@ -28,7 +28,7 @@ def simplified_conv2d_and_relu(x, kernel_size=3, num_kernel=32, stride=1):
 
 def conv2d_transpose(x, W, b, output_shape=None, stride=2):
     if type(W) == list:
-        W = get_weight(W, stddev=0.001)
+        W = get_weight(W)
     if type(b) == list:
         b = get_weight(b)
     if output_shape == None:

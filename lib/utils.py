@@ -1,5 +1,6 @@
 from collections import Counter, OrderedDict
 import numpy as np
+import cv2
 
 """
     This function provide to_categorical which just like keras.utils
@@ -70,3 +71,11 @@ def to_categorical_4d_reverse(_input_tensor, pallete):
     _result_tensor = np.vectorize(reverse_pallete.get)(_input_tensor)
     _result_tensor = np.reshape(np.asarray(_result_tensor).T, [batch, height, width, 3])
     return _result_tensor
+
+def denoising(origin_ann, repeat_time=2):
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    result_ann = np.copy(origin_ann)
+    for i in range(repeat_time):
+        closes = cv2.morphologyEx(result_ann, cv2.MORPH_CLOSE, kernel)
+        result_ann = cv2.morphologyEx(closes, cv2.MORPH_OPEN, kernel)
+    return result_ann

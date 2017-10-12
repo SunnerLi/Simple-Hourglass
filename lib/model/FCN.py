@@ -15,7 +15,7 @@ class FCN8(object):
         crop_grads_and_vars = [(tf.clip_by_value(grad, -0.001, 0.001), var) for grad, var in grads_and_vars]
         self.train_op = optimizer.apply_gradients(crop_grads_and_vars)
 
-    def vgg_part(self, image_ph, base_filter_num=2):
+    def vgg_part(self, image_ph, base_filter_num=16):
         """
             Build the network toward VGG previous part
             If your computer didn't have enough RAM or GPU,
@@ -62,22 +62,23 @@ class FCN8(object):
             prev_channel = deconv1_shape[-1]
             curr_channel = self.network['conv6_3'].get_shape().as_list()[-1]
             deconv1 = layers.conv2d_transpose(self.network['conv6_3'], W=[5, 5, prev_channel, curr_channel], b=[prev_channel], output_shape=tf.shape(self.network['pool4']))
-            add1 = tf.add(deconv1, self.network['pool4'])
+            add1 = tf.nn.relu(tf.add(deconv1, self.network['pool4']))
 
             deconv2_shape = self.network['pool3'].get_shape().as_list()
             prev_channel = deconv2_shape[-1]
             curr_channel = add1.get_shape().as_list()[-1]
             deconv2 = layers.conv2d_transpose(add1, W=[5, 5, prev_channel, curr_channel], b=[prev_channel], output_shape=tf.shape(self.network['pool3']))
-            add2 = tf.add(deconv2, self.network['pool3'])
+            add2 = tf.nn.relu(tf.add(deconv2, self.network['pool3']))
 
             deconv3_shape = image_ph.get_shape().as_list()
             output_shape = tf.stack([tf.shape(add2)[0], deconv3_shape[1], deconv3_shape[2], 3])
             prev_channel = deconv3_shape[-1]
             curr_channel = add2.get_shape().as_list()[-1]
             deconv3 = layers.conv2d_transpose(add2, W=[16, 16, prev_channel, curr_channel], b=[prev_channel], output_shape=output_shape, stride=8)
-            self.predict = tf.argmax(deconv3, axis=-1)
+            self.final_logits = tf.nn.relu(deconv3 + 1e-2)
+            self.predict = tf.argmax(self.final_logits, axis=-1)
         print('trainable: ', tf.trainable_variables())
-        return tf.expand_dims(self.predict, axis=-1), deconv3
+        return tf.expand_dims(self.predict, axis=-1), self.final_logits
 
 if __name__ == '__main__':
     img_ph = tf.placeholder(tf.float32, shape=[None, 104, 78, 3])

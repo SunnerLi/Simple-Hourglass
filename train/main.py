@@ -1,8 +1,8 @@
 import _init_paths
-from utils import to_categorical_4d, to_categorical_4d_reverse, next_batch
+from utils import to_categorical_4d, to_categorical_4d_reverse
 from matplotlib import pyplot as plt
 from skimage import io
-from model import FCN8
+from FCN import FCN8
 import tensorflow as tf
 import numpy as np
 import imageio
@@ -21,6 +21,7 @@ def statistic(x, y):
 
 if __name__ == '__main__':
     (train_img, train_ann), (test_img, test_ann) = ear_pen.load_data()
+    train_img = np.asarray(train_img) * 255
     train_ann = np.asarray(train_ann) / 255
     train_ann, _map = to_categorical_4d(train_ann)
     
@@ -34,6 +35,8 @@ if __name__ == '__main__':
         for i in range(epoch):
             loss_sum = 0
             for j in range(math.ceil(len(train_img) / batch_size)):
+                print('train_img: ', train_img[j*batch_size: j*batch_size+batch_size])
+                print('train_ann: ', train_ann[j*batch_size: j*batch_size+batch_size])
                 feed_dict = {
                     img_ph: train_img[j*batch_size: j*batch_size+batch_size],
                     ann_ph: train_ann[j*batch_size: j*batch_size+batch_size] 

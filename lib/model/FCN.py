@@ -75,7 +75,7 @@ class FCN8(object):
             prev_channel = deconv3_shape[-1]
             curr_channel = add2.get_shape().as_list()[-1]
             deconv3 = layers.conv2d_transpose(add2, W=[16, 16, prev_channel, curr_channel], b=[prev_channel], output_shape=output_shape, stride=8)
-            self.final_logits = tf.nn.relu(deconv3 + 1e-2)
+            self.final_logits = tf.nn.relu(deconv3 + 1e-8)              # Prevent nan loss
             self.predict = tf.argmax(self.final_logits, axis=-1)
         print('trainable: ', tf.trainable_variables())
         return tf.expand_dims(self.predict, axis=-1), self.final_logits

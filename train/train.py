@@ -7,9 +7,9 @@ import imageio
 import ear_pen
 import math
 
-epoch = 2000
-save_period = 50
-batch_size = 2
+epoch = 200
+save_period = 20
+batch_size = 16
 model_store_path = '../model/'
 
 def statistic(x, y, title=''):
@@ -23,9 +23,7 @@ def train(net, img_ph, ann_ph, title):
     # Load data
     (train_img, train_ann), (test_img, test_ann) = ear_pen.load_data()
     train_img = np.asarray(train_img) * 255
-    # train_ann = np.asarray(train_ann) / 255
     train_ann, _map = to_categorical_4d(train_ann)
-    print(train_img[0])
 
     # Train
     saver = tf.train.Saver()
@@ -44,8 +42,8 @@ def train(net, img_ph, ann_ph, title):
             _img = np.asarray(to_categorical_4d_reverse(_img, _map)[0, :, :, :] * 255, dtype=np.uint8)            
             if i % save_period == 0:
                 imageio.imsave(str(i)+'.png', _img)
-                print('iter: ', i, '\tloss: ', loss_sum)
                 loss_list.append(loss_sum)
+            print('iter: ', i, '\tloss: ', loss_sum)
         
         # Store train result
         model_name = title[8:]

@@ -1,5 +1,5 @@
 import _init_paths
-from utils import to_categorical_4d, to_categorical_4d_reverse
+from utils import to_categorical_4d, to_categorical_4d_reverse, denoising
 from FCN import FCN8
 from draw import drawRec
 import tensorflow as tf
@@ -41,13 +41,19 @@ if __name__ == '__main__':
             })
 
             # Show predict annotation
-            ann = to_categorical_4d_reverse(ann, _map)
-            cv2.imshow('ann', ann[0])
-            cv2.waitKey(50)
+            if ann.any:
+                ann = to_categorical_4d_reverse(ann, _map) * 255
+                original_ann = (ann[0])[..., ::-1]
+                original_ann = denoising(original_ann)
+                original_ann = cv2.resize(original_ann, (np.shape(original_ann)[1] * 2, np.shape(original_ann)[0] * 2))
+                cv2.imshow('ann', original_ann)
+                cv2.waitKey(50)
 
             # Show image with BBox
-            ann = ann.astype(np.uint8)
-            result_img = drawRec(fixed_img, ann[0])
+            ann = original_ann.astype(np.uint8)
+            fixed_img = cv2.resize(fixed_img, (np.shape(fixed_img)[1] * 2, np.shape(fixed_img)[0] * 2))
+            result_img = drawRec(fixed_img, ann)
+            
             cv2.imshow('res', result_img)
             cv2.waitKey(50)
         print('video capture close...')

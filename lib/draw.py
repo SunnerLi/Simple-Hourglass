@@ -8,7 +8,7 @@ def drawRec(img, ann):
     gray_ann = gray_ann.astype(np.uint8)
     num_segment, label_map, component_info_list, centroids = cv2.connectedComponentsWithStats(gray_ann, 4, cv2.CV_32S)
     print('num segment: ', num_segment)
-    for i in range(0, num_segment):
+    for i in range(1, num_segment):
         start_point = (component_info_list[i][0], component_info_list[i][1])
         end_point = (component_info_list[i][0] + component_info_list[i][2], component_info_list[i][1] + component_info_list[i][3])
         color = (

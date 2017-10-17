@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-def get_weight(shape, stddev=0.1, name=None):
+def get_weight(shape, stddev=0.001, name=None):
     init = tf.truncated_normal(shape=shape, stddev=stddev)
     if name == None:
         return tf.Variable(init)

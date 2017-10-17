@@ -22,7 +22,6 @@ def statistic(x, y, title=''):
 def train(net, img_ph, ann_ph, title):
     # Load data
     (train_img, train_ann), (test_img, test_ann) = ear_pen.load_data()
-    # train_img = np.asarray(train_img, dtype=np.float) / 255
     train_ann, _map = to_categorical_4d(train_ann)
     print('map: ', _map)
 
@@ -40,7 +39,10 @@ def train(net, img_ph, ann_ph, title):
                 }
                 _loss, _, _img = sess.run([net.loss, net.train_op, net.prediction], feed_dict=feed_dict)
                 loss_sum += _loss
-            _img = np.asarray(to_categorical_4d_reverse(_img, _map)[0, :, :, :], dtype=np.uint8)            
+            _logits = np.asarray(to_categorical_4d_reverse(_img, _map)[0, :, :, :], dtype=np.uint8) 
+            _labels = np.asarray(to_categorical_4d_reverse(train_ann, _map)[0, :, :, :], dtype=np.uint8) 
+            _img = np.concatenate((_logits, _labels), axis=1)
+            print(np.shape(_img))
             if i % save_period == 0:
                 imageio.imsave(str(i)+'.png', _img)
                 loss_list.append(loss_sum)

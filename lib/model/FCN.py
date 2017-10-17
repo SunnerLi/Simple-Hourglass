@@ -56,7 +56,7 @@ class FCN8(object):
             Arg:    image_ph        - The placeholder of images
             Ret:    The prediction result and the logits
         """
-        self.vgg_part(image_ph)
+        self.vgg_part(image_ph) 
         with tf.variable_scope('deconv'):
             deconv1_shape = self.network['pool4'].get_shape().as_list()
             prev_channel = deconv1_shape[-1]

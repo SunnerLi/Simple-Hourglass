@@ -8,14 +8,14 @@ class FCN8(object):
         self.network = {}
         self.prediction, logits = self.formNet(img_ph)
         self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.squeeze(ann_ph, squeeze_dims=[3]), logits=logits))
-        optimizer = tf.train.AdamOptimizer()
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
 
         # Crop gradient
         grads_and_vars = optimizer.compute_gradients(self.loss)
         crop_grads_and_vars = [(tf.clip_by_value(grad, -0.001, 0.001), var) for grad, var in grads_and_vars]
         self.train_op = optimizer.apply_gradients(crop_grads_and_vars)
 
-    def vgg_part(self, image_ph, base_filter_num=16):
+    def vgg_part(self, image_ph, base_filter_num=32):
         """
             Build the network toward VGG previous part
             If your computer didn't have enough RAM or GPU,

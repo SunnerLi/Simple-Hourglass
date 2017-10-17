@@ -1,6 +1,7 @@
 import _init_paths
 from utils import to_categorical_4d, to_categorical_4d_reverse, denoising
 from FCN import FCN8
+from UNet import UNet
 from draw import drawRec
 import tensorflow as tf
 import numpy as np
@@ -10,6 +11,7 @@ import cv2
 
 batch_size = 1
 model_store_path = '../model/FCN-8/FCN-8.ckpt'
+# model_store_path = '../model/UNet/UNet.ckpt'
 video_name = 'move.mp4'
 
 if __name__ == '__main__':
@@ -44,7 +46,7 @@ if __name__ == '__main__':
             if ann.any:
                 ann = to_categorical_4d_reverse(ann, _map) * 255
                 original_ann = (ann[0])[..., ::-1]
-                original_ann = denoising(original_ann)
+                # original_ann = denoising(original_ann)
                 original_ann = cv2.resize(original_ann, (np.shape(original_ann)[1] * 2, np.shape(original_ann)[0] * 2))
                 cv2.imshow('ann', original_ann)
                 cv2.waitKey(50)

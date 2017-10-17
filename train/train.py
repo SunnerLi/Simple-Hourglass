@@ -7,9 +7,9 @@ import imageio
 import ear_pen
 import math
 
-epoch = 200
+epoch = 500
 save_period = 20
-batch_size = 16
+batch_size = 32
 model_store_path = '../model/'
 
 def statistic(x, y, title=''):
@@ -17,13 +17,14 @@ def statistic(x, y, title=''):
     plt.plot(x, y, 'o')
     plt.title(title)
     plt.savefig('result.png')
-    plt.show()
+    # plt.show()
 
 def train(net, img_ph, ann_ph, title):
     # Load data
     (train_img, train_ann), (test_img, test_ann) = ear_pen.load_data()
-    train_img = np.asarray(train_img) * 255
+    # train_img = np.asarray(train_img, dtype=np.float) / 255
     train_ann, _map = to_categorical_4d(train_ann)
+    print('map: ', _map)
 
     # Train
     saver = tf.train.Saver()
@@ -39,7 +40,7 @@ def train(net, img_ph, ann_ph, title):
                 }
                 _loss, _, _img = sess.run([net.loss, net.train_op, net.prediction], feed_dict=feed_dict)
                 loss_sum += _loss
-            _img = np.asarray(to_categorical_4d_reverse(_img, _map)[0, :, :, :] * 255, dtype=np.uint8)            
+            _img = np.asarray(to_categorical_4d_reverse(_img, _map)[0, :, :, :], dtype=np.uint8)            
             if i % save_period == 0:
                 imageio.imsave(str(i)+'.png', _img)
                 loss_list.append(loss_sum)
@@ -48,4 +49,5 @@ def train(net, img_ph, ann_ph, title):
         # Store train result
         model_name = title[8:]
         saver.save(sess, model_store_path + model_name + '/' + model_name + '.ckpt')
-    statistic(range(int(epoch / save_period)), loss_list, title)
+    loss_list[0] = loss_list[-1]
+    statistic(range(int(epoch / save_period)), np.log(loss_list), title)

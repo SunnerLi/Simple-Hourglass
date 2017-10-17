@@ -5,8 +5,9 @@ import tensorflow as tf
 import numpy as np
 import ear_pen
 import math
+import cv2
 
-batch_size = 1
+batch_size = 2
 model_store_path = '../model/UNet/UNet.ckpt'
 
 if __name__ == '__main__':
@@ -32,6 +33,14 @@ if __name__ == '__main__':
                 img_ph: test_img[i*batch_size: i*batch_size+batch_size],
                 ann_ph: test_ann[i*batch_size: i*batch_size+batch_size] 
             }
-            loss_sum += sess.run([net.loss], feed_dict=feed_dict)[0]
+            _loss, _pred= sess.run([net.loss, net.prediction], feed_dict=feed_dict)
+            loss_sum += _loss
         loss_list.append(loss_sum)
         print('test loss: ', loss_sum)
+    show_img = np.concatenate((test_img[0], test_img[1]), axis=1)
+    show_img = np.concatenate((test_ann[0], test_ann[1]), axis=1)
+    # show_img = np.concatenate((_, show_img), axis=0)
+    show_img = np.concatenate((show_img, np.concatenate((_pred[0], _pred[1]), axis=1)), axis=0)
+    print(np.shape(show_img))
+    cv2.imshow('res', show_img)
+    cv2.waitKey(0)

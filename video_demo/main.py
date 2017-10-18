@@ -1,6 +1,6 @@
 import _init_paths
 from utils import to_categorical_4d, to_categorical_4d_reverse, denoising
-from FCN2 import FCN8
+from FCN import FCN8
 from UNet import UNet
 from RedNet import RedNet
 from draw import drawRec
@@ -29,12 +29,20 @@ def formShowImg(image, predictions, _map, counter):
     prediction = np.asarray(to_categorical_4d_reverse(predictions, _map), dtype=np.uint8)[0]
     print(np.shape(prediction))
     prediction = cv2.cvtColor(prediction, cv2.COLOR_RGB2BGR)
+
+    # -----------------------------------------------------------------------------------------
+    # Do open and close operation to delete the noise
+    # (default is commented, you should un-comment by yourself if you want to do)
+    # -----------------------------------------------------------------------------------------
     # prediction = denoising(prediction)
     bboxImage = drawRec(image, prediction)
     show_img = np.concatenate((image, prediction, bboxImage), axis=1)
+
+    # -----------------------------------------------------------------------------------------
+    # Resize the showing image
+    # (default is commented, you should un-comment by yourself if you want to do)
+    # -----------------------------------------------------------------------------------------
     # show_img = cv2.resize(show_img, (np.shape(show_img)[1] * 2, np.shape(show_img)[0] * 2))
-    if counter >= 120 and counter <= 160:
-        cv2.imwrite(str(counter) + '.png', show_img)
     return show_img
 
 if __name__ == '__main__':

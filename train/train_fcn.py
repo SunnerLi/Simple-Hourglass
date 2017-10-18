@@ -1,6 +1,6 @@
 import _init_paths
 from train import train
-from FCN2 import FCN8
+from FCN import FCN8
 import tensorflow as tf
 
 if __name__ == '__main__':

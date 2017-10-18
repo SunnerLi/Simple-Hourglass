@@ -1,6 +1,6 @@
 import _init_paths
 from utils import to_categorical_4d, to_categorical_4d_reverse
-from FCN2 import FCN8
+from FCN import FCN8
 from test import *
 import tensorflow as tf
 import numpy as np
